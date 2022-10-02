@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="/background.css">
+
+</head>
+
+<body>
+    <form action="/login" method="post" enctype="application/json">
+        <label for="username">Your name</label>
+        <input name="username" type="text" id="username">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password">
+        <button type="submit">Login</button>
+    </form>
+    <form action="/adduser" method="POST" enctype="application/json">
+        <label for="username">Your name</label>
+        <input name="username" type="text" id="username">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password">
+        <label for="email">Your Email</label>
+        <input type="email" name="email" id="email">
+        <button type="submit">Register</button>
+    </form>
+
+    <!-- <form action="/logout" method="post" enctype="application/json">
+        <label for="logout">Logout</label>
+        <button type="submit">Logout</button>
+    </form> -->
+</body>
+
+</html>
