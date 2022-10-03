@@ -95,7 +95,7 @@ app.post('/logout', (req, res) => {
 app.get('/verify', async (req, res) => {
     const { email, key } = req.query;
     if (email && key) {
-        if (key === 'lX4%d3T297%C$!QZ') {
+        if (key === '') {
             const foundEmail = await User.findOne({ 'email': email }); //Finding our email
             if (foundEmail && foundEmail.isVerified == false) {
                 await User.findOneAndUpdate({ 'email': email }, { isVerified: true }, { new: true }); //This finds the user based off email and updates!
