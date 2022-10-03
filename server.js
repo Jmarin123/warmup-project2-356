@@ -95,7 +95,7 @@ app.post('/logout', (req, res) => {
 app.get('/verify', async (req, res) => {
     const { email, key } = req.query;
     if (email && key) {
-        if (key === '') {
+        if (key === 'lX4%d3T297%C$!QZ') {
             const foundEmail = await User.findOne({ 'email': email }); //Finding our email
             if (foundEmail && foundEmail.isVerified == false) {
                 await User.findOneAndUpdate({ 'email': email }, { isVerified: true }, { new: true }); //This finds the user based off email and updates!
@@ -229,10 +229,10 @@ app.post('/ttt/play', async (req, res) => {
 })
 
 //list games of current user
-app.post('/listgames', async(req, res) => {
-    if(req.cookies) {
-        User.findOne({'username': req.cookies.username}, (error, currentUser) =>{
-            if(error){
+app.post('/listgames', async (req, res) => {
+    if (req.cookies) {
+        User.findOne({ 'username': req.cookies.username }, (error, currentUser) => {
+            if (error) {
                 const data = {
                     status: 'ERROR',
                     games: null
@@ -254,10 +254,10 @@ app.post('/listgames', async(req, res) => {
 });
 
 //get games by given id of current user
-app.post('/getgame', async(req, res) => {
-    if(req.cookies) {
-        User.findOne({'username': req.cookies.username}, (error, currentUser) =>{
-            if(error){ //if user is not found
+app.post('/getgame', async (req, res) => {
+    if (req.cookies) {
+        User.findOne({ 'username': req.cookies.username }, (error, currentUser) => {
+            if (error) { //if user is not found
                 const data = {
                     status: 'ERROR',
                     game: null
@@ -265,8 +265,8 @@ app.post('/getgame', async(req, res) => {
                 res.json(data);
             } else { //if user is found then get their gameData, get allGames array and search for the specific game by given ID 
                 let gameHistory = currentUser.gameData.allGames;
-                let foundGame = gameHistory.find( game => game.id === req.body.id)
-                if(foundGame){
+                let foundGame = gameHistory.find(game => game.id === req.body.id)
+                if (foundGame) {
                     const data = {
                         status: 'OK',
                         game: foundGame
@@ -278,7 +278,7 @@ app.post('/getgame', async(req, res) => {
                         game: null
                     }
                     res.json(data);
-                } 
+                }
             }
         });
     } else {
@@ -288,10 +288,10 @@ app.post('/getgame', async(req, res) => {
 });
 
 //get score overall of current user
-app.post('/getscore', async(req, res) => {
-    if(req.cookies) {
-        User.findOne({'username': req.cookies.username}, (error, currentUser) =>{
-            if(error){
+app.post('/getscore', async (req, res) => {
+    if (req.cookies) {
+        User.findOne({ 'username': req.cookies.username }, (error, currentUser) => {
+            if (error) {
                 const data = {
                     status: 'ERROR',
                     games: null
