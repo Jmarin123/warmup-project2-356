@@ -4,6 +4,7 @@ const ejsEngine = require('ejs-mate');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
 const Game = require('./models/games.js');
 const User = require('./models/user.js');
 app.use(cookieParser());
@@ -135,10 +136,42 @@ app.post('/adduser', async (req, res) => {
                 }
             });
             await newUser.save(); //Saves to database
-            //Todo: send an email request to verify!
+            //Todo: send an email request to verify!              
             res.sendStatus(200);
         }
     }
+})
+
+app.get('/verify', async(req, res) => {
+    let email = req.body.email;
+    let key = req.body.key;
+
+    // send a verification to address that contains both
+    // email and key.
+    
+    const transport = nodemailer.createTransport({
+        service: 'smtp',
+        auth: {
+            user: 'ouremail@gmail.com',
+            pass: 'password'
+        }
+    });
+
+    var mailOps = {
+        from: 'ouremail@gmail.com',
+        to: email,
+        subject: 'verification link',
+        text: email + ', ' + key
+    }
+
+    transport.sendMail(mailOps, function(err, info) {
+        if (err) {
+            res.sendStatus(400);
+        }
+        else {
+            res.sendStatus(200);
+        }
+    });
 })
 
 app.post('/ttt/play', async (req, res) => {
