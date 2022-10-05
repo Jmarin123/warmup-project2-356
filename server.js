@@ -4,6 +4,7 @@ const ejsEngine = require('ejs-mate');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const mongoose = require('mongoose');
+const nodemailer = require('nodemailer');
 const Game = require('./models/games.js');
 const User = require('./models/user.js');
 app.use(cookieParser());
@@ -135,10 +136,42 @@ app.post('/adduser', async (req, res) => {
                 }
             });
             await newUser.save(); //Saves to database
-            //Todo: send an email request to verify!
+            //Todo: send an email request to verify!              
             res.sendStatus(200);
         }
     }
+})
+
+app.get('/verify', async(req, res) => {
+    let email = req.body.email;
+    let key = req.body.key;
+
+    // send a verification to address that contains both
+    // email and key.
+    
+    const transport = nodemailer.createTransport({
+        service: 'smtp',
+        auth: {
+            user: 'ouremail@gmail.com',
+            pass: 'password'
+        }
+    });
+
+    var mailOps = {
+        from: 'ouremail@gmail.com',
+        to: email,
+        subject: 'verification link',
+        text: email + ', ' + key
+    }
+
+    transport.sendMail(mailOps, function(err, info) {
+        if (err) {
+            res.sendStatus(400);
+        }
+        else {
+            res.sendStatus(200);
+        }
+    });
 })
 
 app.post('/ttt/play', async (req, res) => {
@@ -228,6 +261,92 @@ app.post('/ttt/play', async (req, res) => {
     }
 })
 
+//list games of current user
+app.post('/listgames', async (req, res) => {
+    if (req.cookies) {
+        User.findOne({ 'username': req.cookies.username }, (error, currentUser) => {
+            if (error) {
+                const data = {
+                    status: 'ERROR',
+                    games: null
+                }
+                res.json(data);
+            } else {
+                let gameHistory = currentUser.gameData.allGames;
+                const data = {
+                    status: 'OK',
+                    games: gameHistory
+                }
+                res.json(data)
+            }
+        });
+    } else {
+        res.sendStatus(403)
+        res.redirect('/login')
+    }
+});
+
+//get games by given id of current user
+app.post('/getgame', async (req, res) => {
+    if (req.cookies) {
+        User.findOne({ 'username': req.cookies.username }, (error, currentUser) => {
+            if (error) { //if user is not found
+                const data = {
+                    status: 'ERROR',
+                    game: null
+                }
+                res.json(data);
+            } else { //if user is found then get their gameData, get allGames array and search for the specific game by given ID 
+                let gameHistory = currentUser.gameData.allGames;
+                let foundGame = gameHistory.find(game => game.id === req.body.id)
+                if (foundGame) {
+                    const data = {
+                        status: 'OK',
+                        game: foundGame
+                    }
+                    res.json(data)
+                } else {
+                    const data = {
+                        status: 'ERROR',
+                        game: null
+                    }
+                    res.json(data);
+                }
+            }
+        });
+    } else {
+        res.sendStatus(403)
+        res.redirect('/login')
+    }
+});
+
+//get score overall of current user
+app.post('/getscore', async (req, res) => {
+    if (req.cookies) {
+        User.findOne({ 'username': req.cookies.username }, (error, currentUser) => {
+            if (error) {
+                const data = {
+                    status: 'ERROR',
+                    games: null
+                }
+                res.json(data);
+            } else {
+                let gameHistory = currentUser.gameData.allGames;
+                const data = {
+                    status: 'OK',
+                    human: gameHistory.win,
+                    wopr: gameHistory.loss,
+                    tie: gameHistory.tie
+                }
+                res.json(data)
+            }
+        });
+    } else {
+        res.sendStatus(403)
+        res.redirect('/login')
+    }
+});
+
 
 const checkWinner = (tictactoe) => {
     if (tictactoe[0] == tictactoe[1] && tictactoe[0] == tictactoe[2] && tictactoe[0] != ' ') { //0,1,2-H
@@ -268,9 +387,6 @@ const checkWinner = (tictactoe) => {
         return ' '; //the board is not full, so play continues
     }
 }
-
-
-
 
 app.listen(80, () => {
     console.log("Listening on port 80!");
