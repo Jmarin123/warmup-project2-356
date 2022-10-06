@@ -110,6 +110,33 @@ app.get('/verify', async (req, res) => {
         }
     } else {
         res.sendStatus(400) //if the query string doesnt have key or email send 400
+        
+        // send a verification to address that contains both
+        // email and key.
+        
+        const transport = nodemailer.createTransport({
+            service: 'smtp',
+            auth: {
+                user: 'ouremail@gmail.com',
+                pass: 'password'
+            }
+        });
+
+        var mailOps = {
+            from: 'ouremail@gmail.com',
+            to: email,
+            subject: 'verification link',
+        text: `${window.location.origin}/verify` + "?email=" + email + "&key=" + key
+        }
+
+        transport.sendMail(mailOps, function(err, info) {
+            if (err) {
+                res.sendStatus(400);
+            }
+            else {
+                res.sendStatus(200);
+            }
+        });
     }
 })
 
@@ -141,38 +168,6 @@ app.post('/adduser', async (req, res) => {
             res.sendStatus(200);
         }
     }
-})
-
-app.get('/verify', async(req, res) => {
-    let email = req.body.email;
-    let key = req.body.key;
-
-    // send a verification to address that contains both
-    // email and key.
-    
-    const transport = nodemailer.createTransport({
-        service: 'smtp',
-        auth: {
-            user: 'ouremail@gmail.com',
-            pass: 'password'
-        }
-    });
-
-    var mailOps = {
-        from: 'ouremail@gmail.com',
-        to: email,
-        subject: 'verification link',
-    text: `${window.location.origin}/verify` + "?email=" + email + "&key=" + key
-    }
-
-    transport.sendMail(mailOps, function(err, info) {
-        if (err) {
-            res.sendStatus(400);
-        }
-        else {
-            res.sendStatus(200);
-        }
-    });
 })
 
 app.post('/ttt/play', async (req, res) => {
