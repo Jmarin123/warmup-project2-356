@@ -136,7 +136,8 @@ app.post('/adduser', async (req, res) => {
                 }
             });
             await newUser.save(); //Saves to database
-            //Todo: send an email request to verify!              
+            //Todo: send an email request to verify!    
+            res.redirect('/verify');
             res.sendStatus(200);
         }
     }
@@ -161,7 +162,7 @@ app.get('/verify', async(req, res) => {
         from: 'ouremail@gmail.com',
         to: email,
         subject: 'verification link',
-        text: email + ', ' + key
+    text: `${window.location.origin}/verify` + "?email=" + email + "&key=" + key
     }
 
     transport.sendMail(mailOps, function(err, info) {
