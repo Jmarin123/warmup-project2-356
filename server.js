@@ -101,29 +101,35 @@ app.post('/logout', (req, res) => {
 })
 
 app.get('/verify', async (req, res) => {
-    const { email, key } = req.query;
-    key = encodeURIComponent(key);
-    email = encodeURIComponent(email);
+    const email = req.query.email;
+    const key = req.query.key;
+    console.log(req.query);
+    //email = encodeURIComponent(email);
+    //console.log("Verifying?")
+    // console.log(email);
     if (email && key) {
-        const foundEmail = await User.findOne({ 'email': email });
-        if (key === foundEmail.key) {
+        const foundEmail = await User.findOne({ email: email });
+        //console.log(foundEmail);
+        if (foundEmail && key === foundEmail.key) {
             //Finding our email
-            if (foundEmail && foundEmail.isVerified == false) {
+            if (foundEmail.isVerified == false) {
                 await User.findOneAndUpdate({ 'email': email }, { isVerified: true }, { new: true }); //This finds the user based off email and updates!
-                res.json({ status: 'OK' });
+                return res.json({ status: 'OK' });
             } else {
                 //Email not in the system! Or is already verified
-                res.json({ status: 'ERROR' });
+                console.log("already verified!!");
+                return res.json({ status: 'ERROR' });
             }
         } else {
-            res.json({ status: 'ERROR' });//If key doesnt match send a 400
+            console.log("didnt find a user in the DB");
+            return res.json({ status: 'ERROR' });//If key doesnt match send a 400
         }
     } else {
         //if the query string doesnt have key or email send 400
 
         // send a verification to address that contains both
         // email and key.
-
+        console.log("Failed to get key and email!")
         res.json({ status: 'ERROR' });
     }
 })
@@ -138,12 +144,13 @@ app.post('/adduser', async (req, res) => {
             res.json({ status: 'ERROR' });
         } else {
             const givenUUID = uuidv4();
+            const encodedEmail = encodeURIComponent(req.body.email)
             const newUser = new User({ //This will create the user we need
                 username: req.body.username,
                 password: req.body.password,
-                email: encodeURIComponent(req.body.email),
+                email: req.body.email,
                 isVerified: false,
-                key: encodeURIComponent(givenUUID),
+                key: givenUUID,
                 gameData: {
                     win: 0,
                     loss: 0,
@@ -152,40 +159,33 @@ app.post('/adduser', async (req, res) => {
                     allGames: []
                 }
             });
-            await newUser.save(); //Saves to database
-            //Todo: send an email request to verify!    
+            //Saves to database
+            //Todo: send an email request to verify!
             //res.redirect('/verify');
-
-
+            await newUser.save();
 
             const transport = nodemailer.createTransport({
                 sendmail: true,
                 newline: 'unix',
                 path: '/usr/sbin/sendmail'
             });
-
-            var mailOps = {
-                from: 'goofy <root@goofy-goobers.cse356.compas.cs.stonybrook.edu>',
-                to: encodeURIComponent(req.body.email),
+            insideText = 'http://goofy-goobers.cse356.compas.cs.stonybrook.edu/verify' + "?email=" + encodedEmail + "&key=" + givenUUID;
+            console.log(insideText);
+            transport.sendMail({
+                from: 'root@goofy-goobers.cse356.compas.cs.stonybrook.edu',
+                to: req.body.email,
                 subject: 'verification link',
-                text: `http://goofy-goobers.cse356.compas.cs.stonybrook.edu/verify` + "?email=" + encodeURIComponent(req.body.email) + "&key=" + encodeURIComponent(givenUUID)
-            }
+                text: insideText
+            }, (err, info) => {
+                console.log(err);
 
-            transport.sendMail(mailOps, function (err, info) {
-                if (err) {
-                    res.json({ status: 'ERROR' });
-                }
-                else {
-                    res.json({ status: 'OK' })
-                }
+
             });
-            //res.json({ status: 'OK' });
+            res.json({ status: 'OK' });
         }
     }
 })
-
 app.post('/ttt/play', async (req, res) => {
-    let grid = req.body.grid;
     let move = req.body.move;
     const { username, password } = req.cookies;
     if (!username || !password) {
@@ -196,44 +196,43 @@ app.post('/ttt/play', async (req, res) => {
         return res.json({ status: 'ERROR' });;//If user doesnt exit currently and u trynna play it is bad!
     }
     //THIS ONE MIGHT BE OUT OF ORDER IDK WHEN TO START!
-    let newBoard = true;
-    for (let value of grid) {
-        if (value !== ' ') {
-            newBoard = false; //Doing a check if the grid is all empty to set up the new time date
-        }
-    }
-    let currentGame;
+    move = JSON.parse(move);
     let indexOfGame = getUser.gameData.currentGame;
-    if (newBoard) {
+    let checkIfGameExists = getUser.gameData.allGames[indexOfGame];
+    let currentGame;
+    let currentGrid;
+    if (checkIfGameExists) {
         //If we are starting a new board we will create a game
         //Feel like we need a check for if a new board is sent to NOT make a new game dunno tho!
-        currentGame = new Game({ id: indexOfGame, startDate: Date.now(), grid: grid, winner: ' ' })
+        currentGrid = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '];
+        currentGame = new Game({ id: indexOfGame, startDate: Date.now(), grid: currentGrid, winner: ' ' })
         getUser.gameData.allGames.push(currentGame);
         getUser.save()
         currentGame.save();
     } else {
         let getGameID = getUser.gameData.allGames[indexOfGame]._id;
         currentGame = await Game.findOne({ _id: getGameID });
+        currentGrid = currentGame.grid;
     }
     //Todo this all so it updates in the mongo client ;P
     if (move == null) {
         const data = {
-            grid: grid,
+            grid: currentGrid,
             winner: ' '
         }
         return res.json(data);
     }
-    if (grid[move] !== ' ') {
+    if (currentGrid[move] !== ' ') {
         return res.json({ status: 'ERROR' }); //If they try making a move into the grid that has a square filled is bad!! or if they try filing it with a non x move
     }
-    grid[move] = 'X';
-    let winner = checkWinner(grid);
+    currentGrid[move] = 'X';
+    let winner = checkWinner(currentGrid);
     if (winner == 'T') {
         const data = {
-            grid: grid,
+            grid: currentGrid,
             winner: 'T'
         }
-        await currentGame.updateOne({ grid: grid });
+        await currentGame.updateOne({ grid: currentGrid });
         await currentGame.updateOne({ winner: 'T' });
         await getUser.updateOne({
             gameData: {
@@ -247,10 +246,10 @@ app.post('/ttt/play', async (req, res) => {
         res.json(data);
     } else if (winner == 'X') {
         const data = {
-            grid: grid,
+            grid: currentGrid,
             winner: 'X'
         }
-        await currentGame.updateOne({ grid: grid });
+        await currentGame.updateOne({ grid: currentGrid });
         await currentGame.updateOne({ winner: 'X' });
         await getUser.updateOne({
             gameData: {
@@ -265,18 +264,18 @@ app.post('/ttt/play', async (req, res) => {
     } else {
         while (true) {
             let randomInt = Math.floor(Math.random() * 9);
-            if (grid[randomInt] == ' ') {
-                grid[randomInt] = 'O';
+            if (currentGrid[randomInt] == ' ') {
+                currentGrid[randomInt] = 'O';
                 break;
             }
         }
-        winner = checkWinner(grid);
+        winner = checkWinner(currentGrid);
         if (winner == 'T') {
             const data = {
-                grid: grid,
+                grid: currentGrid,
                 winner: 'T'
             }
-            await currentGame.updateOne({ grid: grid });
+            await currentGame.updateOne({ grid: currentGrid });
             await currentGame.updateOne({ winner: 'T' });
             await getUser.updateOne({
                 gameData: {
@@ -290,10 +289,10 @@ app.post('/ttt/play', async (req, res) => {
             res.json(data);
         } else if (winner == 'O') {
             const data = {
-                grid: grid,
+                grid: currentGrid,
                 winner: 'O'
             }
-            await currentGame.updateOne({ grid: grid });
+            await currentGame.updateOne({ grid: currentGrid });
             await currentGame.updateOne({ winner: 'O' });
             await getUser.updateOne({
                 gameData: {
@@ -307,10 +306,10 @@ app.post('/ttt/play', async (req, res) => {
             res.json(data);
         } else {
             const data = {
-                grid: grid,
+                grid: currentGrid,
                 winner: ' '
             }
-            await currentGame.updateOne({ grid: grid });
+            await currentGame.updateOne({ grid: currentGrid });
             res.json(data);
         }
     }
@@ -363,7 +362,7 @@ app.post('/getgame', async (req, res) => {
         //             game: null
         //         }
         //         res.json(data);
-        //     } else { //if user is found then get their gameData, get allGames array and search for the specific game by given ID 
+        //     } else { //if user is found then get their gameData, get allGames array and search for the specific game by given ID
         //         let gameHistory = currentUser.gameData.allGames;
         //         let foundGame = gameHistory.find(game => game.id === req.body.id)
         //         if (foundGame) {
