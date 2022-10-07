@@ -102,6 +102,8 @@ app.post('/logout', (req, res) => {
 
 app.get('/verify', async (req, res) => {
     const { email, key } = req.query;
+    key = encodeURIComponent(key);
+    email = encodeURIComponent(email);
     if (email && key) {
         const foundEmail = await User.findOne({ 'email': email });
         if (key === foundEmail.key) {
@@ -139,9 +141,9 @@ app.post('/adduser', async (req, res) => {
             const newUser = new User({ //This will create the user we need
                 username: req.body.username,
                 password: req.body.password,
-                email: req.body.email,
+                email: encodeURIComponent(req.body.email),
                 isVerified: false,
-                key: givenUUID,
+                key: encodeURIComponent(givenUUID),
                 gameData: {
                     win: 0,
                     loss: 0,
@@ -164,9 +166,9 @@ app.post('/adduser', async (req, res) => {
 
             var mailOps = {
                 from: 'goofy <root@goofy-goobers.cse356.compas.cs.stonybrook.edu>',
-                to: enocdeURIComponent(req.body.email),
+                to: encodeURIComponent(req.body.email),
                 subject: 'verification link',
-                text: `http://goofy-goobers.cse356.compas.cs.stonybrook.edu/verify` + "?email=" + req.body.email + "&key=" + givenUUID
+                text: `http://goofy-goobers.cse356.compas.cs.stonybrook.edu/verify` + "?email=" + encodeURIComponent(req.body.email) + "&key=" + encodeURIComponent(givenUUID)
             }
 
             transport.sendMail(mailOps, function (err, info) {
