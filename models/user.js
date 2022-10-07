@@ -6,6 +6,7 @@ const userSchema = new Schema({
     password: String,
     email: String,
     isVerified: Boolean,
+    key: String,
     gameData: {
         win: Number,
         loss: Number,
