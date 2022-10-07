@@ -163,7 +163,7 @@ app.post('/adduser', async (req, res) => {
             });
 
             var mailOps = {
-                from: 'ouremail@gmail.com',
+                from: 'goofy <root@goofy-goobers.cse356.compas.cs.stonybrook.edu>',
                 to: enocdeURIComponent(req.body.email),
                 subject: 'verification link',
                 text: `http://goofy-goobers.cse356.compas.cs.stonybrook.edu/verify` + "?email=" + req.body.email + "&key=" + givenUUID
